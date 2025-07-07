@@ -28,7 +28,9 @@ jobs:
 
           iconv -f WINDOWS-1258 -t UTF-8 temp_raw.txt -o temp_utf8.txt || cp temp_raw.txt temp_utf8.txt
 
-          grep -v '^$' temp_utf8.txt | sed 's/,$/@/' | sort | uniq > combined.txt
+# Cắt thành từng dòng đúng, tách dấu `,` và `@` rõ ràng
+tr ',' '\n' < temp_utf8.txt | sed 's/ *$//' | sed 's/$/@/' | sed 's/@$/@/' | sort | uniq > combined.txt
+
 
           rm temp_raw.txt temp_utf8.txt
 
