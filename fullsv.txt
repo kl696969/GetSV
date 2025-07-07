@@ -29,12 +29,4 @@ GENZ 2:gate.kpahz.pro:19130:0@
 Sơn Lâm KPAH5 :112.213.84.70:19129:0@
 Thăng Long kpah3:103.153.64.188:19130:0@
 Tien Du kpah2:sv.kpah2.me:19129:0@
-Phong Chau kpah2:sv.kpah2.me:19131:0@
-Huyền Vũ:221.132.33.178:19129:0@
-HoiUcTopNgay:14.225.209.121:12345:0@
-Hoàng Kim:14.225.198.46:19129:0@
-Trùng Sinh:14.225.207.205:19129:0@
-Local:127.0.0.1:19129:0@
-TuanAnh:171.235.104.172:15555:0@
-TuanAnh-Test:kpah2025.ddns.net:14444:0@
-Admin 2:kpah2025.ddns.net:19130:0
+Phong Chau kpah2:sv.kpah2.me:19131:0
