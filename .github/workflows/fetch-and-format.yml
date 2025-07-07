@@ -41,7 +41,7 @@ jobs:
           }
 
           # Danh sách URL theo thứ tự mong muốn
-          fetch_and_clean http://112.213.94.5/srvips/sv.txt      srv
+          fetch_with_comma https://get-sv.kimod96.workers.dev      srv
           fetch_and_clean http://rkbom.site/ip/svmoi.txt         svmoi
 
           # Gộp theo thứ tự
