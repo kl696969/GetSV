@@ -41,8 +41,8 @@ jobs:
           }
 
           # Danh sách URL theo thứ tự mong muốn
-          fetch_with_comma https://get-sv.kimod96.workers.dev      srv
           fetch_and_clean http://rkbom.site/ip/svmoi.txt         svmoi
+          fetch_and_clean http://kpah99.com/nqsh9.txt            nqsh9
 
           # Gộp theo thứ tự
           for f in urls/*.txt; do
