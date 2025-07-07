@@ -15,40 +15,54 @@ jobs:
         with:
           ref: main
 
-      - name: Fetch and process with ordered blocks
+      - name: Fetch and clean data by URL order
         run: |
-          mkdir urls && > combined.txt
+          mkdir -p urls && > combined.txt
 
-          # Hàm tải, chuẩn hóa từng URL
           fetch_and_clean() {
             local url=$1
-            local outfile=$2
+            local name=$2
+            local tmpfile="urls/$name.txt"
 
-            curl -s "$url" | \
-              iconv -f WINDOWS-1258 -t UTF-8 2>/dev/null | \
-              sed '1s/^\xEF\xBB\xBF//' | \
-              sed '$s/[^,]$/.&,/; $s/,$//; $s/$/,/' | \
-              tr ',\r' '\n' | \
-              grep -v '^$' | \
-              sed 's/ *@*$/@/' | \
-              awk -F: '!a[$2":"$3]++' | \
-              grep -E '^[^:]+:[^:]+:[0-9]+:[0-9]+@$' > "urls/$outfile"
+            echo "Fetching $url..."
+            curl -s "$url" > raw.txt
+
+            # Chuyển mã hóa + xóa BOM nếu có
+            iconv -f WINDOWS-1258 -t UTF-8 raw.txt -o utf8.txt || cp raw.txt utf8.txt
+            sed -i '1s/^\xEF\xBB\xBF//' utf8.txt
+
+            # Đảm bảo dòng cuối có dấu ,
+            sed -i '$s/[^,]$/.&,/; $s/,$//; $s/$/,/' utf8.txt
+
+            # Tách dòng theo dấu phẩy, lọc trống, thêm @
+            tr ',\r' '\n' < utf8.txt | grep -v '^$' | sed 's/ *@*$/@/' > "$tmpfile"
+
+            rm -f raw.txt utf8.txt
           }
 
-          # Fetch từng URL (theo thứ tự mong muốn)
-          fetch_and_clean http://dangky.hexat.com/lau.txt        lau.txt
-          fetch_and_clean http://112.213.94.5/srvips/sv.txt      srv.txt
-          fetch_and_clean http://rkbom.site/ip/svmoi.txt         svmoi.txt
+          # Danh sách URL theo thứ tự mong muốn
+          fetch_and_clean http://dangky.hexat.com/lau.txt        lau
+          fetch_and_clean http://112.213.94.5/srvips/sv.txt      srv
+          fetch_and_clean http://rkbom.site/ip/svmoi.txt         svmoi
+          fetch_and_clean http://kpah99.com/nqsh9.txt            nqsh9
+          fetch_and_clean http://sv.naska.com.vn/allsv.txt       naska
+          fetch_and_clean http://tuananh0781.hexat.com/19951999dshgkjd.txt tuananh
 
-          # Gộp lại theo thứ tự
-          cat urls/lau.txt >> combined.txt
-          cat urls/srv.txt >> combined.txt
-          cat urls/svmoi.txt >> combined.txt
+          # Gộp theo thứ tự
+          for f in urls/*.txt; do
+            cat "$f" >> combined.txt
+          done
 
-          # Xoá @ dòng cuối cùng nếu có
-          sed '${s/@$//}' combined.txt > fullsv.txt
+          # Lọc trùng theo IP:PORT
+          awk -F: '!a[$2":"$3]++' combined.txt > step_filtered.txt
 
-          rm -r urls
+          # Chỉ giữ dòng hợp lệ
+          grep -E '^[^:]+:[^:]+:[0-9]+:[0-9]+@$' step_filtered.txt > fullsv.txt
+
+          # Xóa @ cuối cùng nếu có
+          sed -i '${s/@$//}' fullsv.txt
+
+          rm -rf urls combined.txt step_filtered.txt
 
       - name: Commit and push fullsv.txt
         env:
