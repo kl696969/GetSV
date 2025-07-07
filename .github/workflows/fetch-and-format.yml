@@ -24,9 +24,7 @@ jobs:
             curl -s "$1" | sed '$s/[^,]$/.&,/; $s/,$//; $s/$/,/' >> temp_raw.txt
           }
 
-          fetch_with_comma http://dangky.hexat.com/lau.txt
           fetch_with_comma http://112.213.94.5/srvips/sv.txt
-          fetch_with_comma http://kpah99.com/nqsh9.txt
           fetch_with_comma http://rkbom.site/ip/svmoi.txt
           fetch_with_comma http://sv.naska.com.vn/allsv.txt
 
