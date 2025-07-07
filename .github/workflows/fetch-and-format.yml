@@ -27,41 +27,29 @@ jobs:
             echo "Fetching $url..."
             curl -s "$url" > raw.txt
 
-            # Xóa BOM nếu có
-            sed '1s/^\xEF\xBB\xBF//' raw.txt > clean.txt
+            iconv -f WINDOWS-1258 -t UTF-8 raw.txt -o utf8.txt || cp raw.txt utf8.txt
+            sed -i '1s/^\xEF\xBB\xBF//' utf8.txt
+            sed -i '$s/[^,]$/.&,/; $s/,$//; $s/$/,/' utf8.txt
 
-            # Đảm bảo dòng cuối có dấu ,
-            sed -i '$s/[^,]$/.&,/; $s/,$//; $s/$/,/' clean.txt
+            tr ',\r' '\n' < utf8.txt | grep -v '^$' | sed 's/ *@*$/@/' > "$tmpfile"
 
-            # Tách theo dấu phẩy + chuẩn hóa
-            tr ',\r' '\n' < clean.txt | grep -v '^$' | sed 's/ *@*$/@/' > "$tmpfile"
-
-            rm -f raw.txt clean.txt
+            rm -f raw.txt utf8.txt
           }
 
-          # Danh sách URL theo thứ tự mong muốn
           fetch_and_clean http://rkbom.site/ip/svmoi.txt         svmoi
           fetch_and_clean http://kpah99.com/nqsh9.txt            nqsh9
 
-          # Gộp đúng thứ tự
           for f in urls/*.txt; do
             cat "$f" >> combined.txt
           done
 
-          # Lọc trùng theo IP:PORT
           awk -F: '!a[$2":"$3]++' combined.txt > step_filtered.txt
-
-          # Chỉ giữ dòng hợp lệ
           grep -E '^[^:]+:[^:]+:[0-9]+:[0-9]+@$' step_filtered.txt > fullsv.txt
-
-          # Xóa @ cuối nếu có
           sed -i '${s/@$//}' fullsv.txt
 
           rm -rf urls combined.txt step_filtered.txt
 
       - name: Commit and push fullsv.txt
-        env:
-          TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -69,5 +57,17 @@ jobs:
           git add fullsv.txt
           git commit -m "Update fullsv.txt at $(date -u)" || echo "Nothing to commit"
 
-          git remote set-url origin https://x-access-token:${TOKEN}@github.com/${{ github.repository }}
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
           git push origin HEAD:main
+
+      - name: Notify Telegram if file changed
+        run: |
+          git fetch origin main
+          if git diff --quiet origin/main -- fullsv.txt; then
+            echo "No changes detected."
+          else
+            curl -s -X POST https://api.telegram.org/bot7664125092:AAGqzU6gCmEkrbqz4bbdHGkqSk4BuqO3gAU/sendMessage \
+              -d chat_id="770466376" \
+              -d text="✅ File *fullsv.txt* đã cập nhật tại $(date -u +'%H:%M %d-%m-%Y UTC')" \
+              -d parse_mode="Markdown"
+          fi
