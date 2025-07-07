@@ -15,6 +15,10 @@ jobs:
         with:
           ref: main
 
+      - name: Backup old version
+        run: |
+          cp fullsv.txt fullsv_old.txt || touch fullsv_old.txt
+
       - name: Fetch and clean data by URL order
         run: |
           mkdir -p urls && > combined.txt
@@ -39,25 +43,33 @@ jobs:
             rm -f raw.txt clean.txt
           }
 
-          # Danh sách URL theo thứ tự mong muốn
           fetch_and_clean http://rkbom.site/ip/svmoi.txt         svmoi
           fetch_and_clean http://kpah99.com/nqsh9.txt            nqsh9
 
-          # Gộp đúng thứ tự
           for f in urls/*.txt; do
             cat "$f" >> combined.txt
           done
 
-          # Lọc trùng theo IP:PORT
           awk -F: '!a[$2":"$3]++' combined.txt > step_filtered.txt
-
-          # Chỉ giữ dòng hợp lệ
           grep -E '^[^:]+:[^:]+:[0-9]+:[0-9]+@$' step_filtered.txt > fullsv.txt
-
-          # Xóa @ cuối nếu có
           sed -i '${s/@$//}' fullsv.txt
 
           rm -rf urls combined.txt step_filtered.txt
+
+      - name: Compare and notify Telegram if changed
+        env:
+          TELEGRAM_TOKEN: "7664125092:AAGqzU6gCmEkrbqz4bbdHGkqSk4BuqO3gAU"
+          TELEGRAM_CHAT_ID: "770466376"
+        run: |
+          if ! cmp -s fullsv.txt fullsv_old.txt; then
+            echo "fullsv.txt changed, sending Telegram..."
+            curl -s -X POST https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage \
+              -d chat_id="${TELEGRAM_CHAT_ID}" \
+              -d text="✅ File *fullsv.txt* đã được cập nhật vào $(date -u '+%H:%M %d-%m-%Y UTC')" \
+              -d parse_mode="Markdown"
+          else
+            echo "No change in fullsv.txt"
+          fi
 
       - name: Commit and push fullsv.txt
         env:
