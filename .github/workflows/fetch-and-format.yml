@@ -14,12 +14,11 @@ jobs:
         uses: actions/checkout@v3
         with:
           ref: main
+
       - name: Fetch and process with encoding fix
         run: |
-          # Tạo file tạm rỗng
           > temp_raw.txt
 
-          # Lấy dữ liệu từ 6 URL
           curl -s http://dangky.hexat.com/lau.txt >> temp_raw.txt
           curl -s http://112.213.94.5/srvips/sv.txt >> temp_raw.txt
           curl -s http://tuananh0781.hexat.com/19951999dshgkjd.txt >> temp_raw.txt
@@ -27,13 +26,10 @@ jobs:
           curl -s http://rkbom.site/ip/svmoi.txt >> temp_raw.txt
           curl -s http://sv.naska.com.vn/allsv.txt >> temp_raw.txt
 
-          # Chuyển mã hóa về UTF-8 nếu cần
           iconv -f WINDOWS-1258 -t UTF-8 temp_raw.txt -o temp_utf8.txt || cp temp_raw.txt temp_utf8.txt
 
-          # Làm sạch: bỏ dòng trắng, đổi dấu phẩy cuối dòng thành @, lọc trùng
           grep -v '^$' temp_utf8.txt | sed 's/,$/@/' | sort | uniq > combined.txt
 
-          # Xoá file tạm
           rm temp_raw.txt temp_utf8.txt
 
       - name: Commit and push combined.txt
@@ -43,4 +39,5 @@ jobs:
 
           git add combined.txt
           git commit -m "Update combined.txt at $(date -u)" || echo "Nothing to commit"
-          git push
+
+          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} HEAD:main
