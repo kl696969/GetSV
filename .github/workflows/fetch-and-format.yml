@@ -15,43 +15,40 @@ jobs:
         with:
           ref: main
 
-      - name: Fetch and process with encoding fix
+      - name: Fetch and process with ordered blocks
         run: |
-          > temp_raw.txt
+          mkdir urls && > combined.txt
 
-          # Hàm tải file và đảm bảo có dấu , ở dòng cuối
-          fetch_with_comma() {
-            curl -s "$1" | sed '$s/[^,]$/.&,/; $s/,$//; $s/$/,/' >> temp_raw.txt
+          # Hàm tải, chuẩn hóa từng URL
+          fetch_and_clean() {
+            local url=$1
+            local outfile=$2
+
+            curl -s "$url" | \
+              iconv -f WINDOWS-1258 -t UTF-8 2>/dev/null | \
+              sed '1s/^\xEF\xBB\xBF//' | \
+              sed '$s/[^,]$/.&,/; $s/,$//; $s/$/,/' | \
+              tr ',\r' '\n' | \
+              grep -v '^$' | \
+              sed 's/ *@*$/@/' | \
+              awk -F: '!a[$2":"$3]++' | \
+              grep -E '^[^:]+:[^:]+:[0-9]+:[0-9]+@$' > "urls/$outfile"
           }
 
-          fetch_with_comma http://dangky.hexat.com/lau.txt
-          fetch_with_comma http://112.213.94.5/srvips/sv.txt
-          fetch_with_comma http://rkbom.site/ip/svmoi.txt
+          # Fetch từng URL (theo thứ tự mong muốn)
+          fetch_and_clean http://dangky.hexat.com/lau.txt        lau.txt
+          fetch_and_clean http://112.213.94.5/srvips/sv.txt      srv.txt
+          fetch_and_clean http://rkbom.site/ip/svmoi.txt         svmoi.txt
 
-          # Chuyển mã hóa từ Windows-1258 → UTF-8 nếu cần
-          iconv -f WINDOWS-1258 -t UTF-8 temp_raw.txt -o temp_utf8.txt || cp temp_raw.txt temp_utf8.txt
+          # Gộp lại theo thứ tự
+          cat urls/lau.txt >> combined.txt
+          cat urls/srv.txt >> combined.txt
+          cat urls/svmoi.txt >> combined.txt
 
-          # Xoá BOM nếu có
-          sed -i '1s/^\xEF\xBB\xBF//' temp_utf8.txt
+          # Xoá @ dòng cuối cùng nếu có
+          sed '${s/@$//}' combined.txt > fullsv.txt
 
-          # Tách dòng theo dấu , và chuẩn hóa
-          tr ',\r' '\n' < temp_utf8.txt > step1.txt
-          grep -v '^$' step1.txt > step2.txt
-
-          # Thêm @ nếu chưa có
-          sed 's/ *@*$/@/' step2.txt > step3.txt
-
-          # Lọc trùng theo IP:PORT
-          awk -F: '!a[$2":"$3]++' step3.txt > step4.txt
-
-          # Chỉ giữ dòng đúng định dạng: Tên:IP:PORT:FLAGS@
-          grep -E '^[^:]+:[^:]+:[0-9]+:[0-9]+@$' step4.txt > step5.txt
-
-          # Xoá @ ở dòng cuối nếu có
-          sed '${s/@$//}' step5.txt > fullsv.txt
-
-          # Xoá file tạm
-          rm temp_raw.txt temp_utf8.txt step1.txt step2.txt step3.txt step4.txt step5.txt
+          rm -r urls
 
       - name: Commit and push fullsv.txt
         env:
