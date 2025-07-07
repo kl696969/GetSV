@@ -27,24 +27,23 @@ jobs:
             echo "Fetching $url..."
             curl -s "$url" > raw.txt
 
-            # Chuyển mã hóa + xóa BOM nếu có
-            iconv -f WINDOWS-1258 -t UTF-8 raw.txt -o utf8.txt || cp raw.txt utf8.txt
-            sed -i '1s/^\xEF\xBB\xBF//' utf8.txt
+            # Xóa BOM nếu có
+            sed '1s/^\xEF\xBB\xBF//' raw.txt > clean.txt
 
             # Đảm bảo dòng cuối có dấu ,
-            sed -i '$s/[^,]$/.&,/; $s/,$//; $s/$/,/' utf8.txt
+            sed -i '$s/[^,]$/.&,/; $s/,$//; $s/$/,/' clean.txt
 
-            # Tách dòng theo dấu phẩy, lọc trống, thêm @
-            tr ',\r' '\n' < utf8.txt | grep -v '^$' | sed 's/ *@*$/@/' > "$tmpfile"
+            # Tách theo dấu phẩy + chuẩn hóa
+            tr ',\r' '\n' < clean.txt | grep -v '^$' | sed 's/ *@*$/@/' > "$tmpfile"
 
-            rm -f raw.txt utf8.txt
+            rm -f raw.txt clean.txt
           }
 
           # Danh sách URL theo thứ tự mong muốn
           fetch_and_clean http://rkbom.site/ip/svmoi.txt         svmoi
           fetch_and_clean http://kpah99.com/nqsh9.txt            nqsh9
 
-          # Gộp theo thứ tự
+          # Gộp đúng thứ tự
           for f in urls/*.txt; do
             cat "$f" >> combined.txt
           done
@@ -55,7 +54,7 @@ jobs:
           # Chỉ giữ dòng hợp lệ
           grep -E '^[^:]+:[^:]+:[0-9]+:[0-9]+@$' step_filtered.txt > fullsv.txt
 
-          # Xóa @ dòng cuối nếu có
+          # Xóa @ cuối nếu có
           sed -i '${s/@$//}' fullsv.txt
 
           rm -rf urls combined.txt step_filtered.txt
