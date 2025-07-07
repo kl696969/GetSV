@@ -62,11 +62,22 @@ jobs:
           TELEGRAM_CHAT_ID: "770466376"
         run: |
           if ! cmp -s fullsv.txt fullsv_old.txt; then
-            echo "fullsv.txt changed, sending Telegram..."
+            echo "fullsv.txt changed, generating diff..."
+
+            # Lấy dòng thêm mới
+            diff=$(comm -13 <(sort fullsv_old.txt) <(sort fullsv.txt) | head -n 20)
+            count=$(echo "$diff" | grep -c . || true)
+
+            if [ "$count" -eq 0 ]; then
+              diff="(Không rõ dòng nào mới)"
+            fi
+
+            # Thông báo Telegram
             curl -s -X POST https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage \
               -d chat_id="${TELEGRAM_CHAT_ID}" \
-              -d text="✅ File *fullsv.txt* đã được cập nhật vào $(date -u '+%H:%M %d-%m-%Y UTC')" \
-              -d parse_mode="Markdown"
+              --data-urlencode text="📥 *fullsv.txt* đã cập nhật lúc $(date -u '+%H:%M %d-%m-%Y UTC')\n\n🆕 $count dòng mới:\n\`\`\`\n$diff\n\`\`\`" \
+              -d parse_mode=Markdown
+
           else
             echo "No change in fullsv.txt"
           fi
