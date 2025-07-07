@@ -31,8 +31,4 @@ Thăng Long kpah3:103.153.64.188:19130:0@
 Tien Du kpah2:sv.kpah2.me:19129:0@
 Phong Chau kpah2:sv.kpah2.me:19131:0@
 KPAHZ.PRO:gate.kpahz.pro:19129:.0@
-Huyền Vũ:221.132.33.178:19129:0@
-HoiUcTopNgay:14.225.209.121:12345:0@
-Hoàng Kim:14.225.198.46:19129:0@
-Trùng Sinh:14.225.207.205:19129:0@
-Hiếu Roman:sv.naska.com.vn:19130:.1
+SV test 1:sv.kpah2.me:20000:.0
