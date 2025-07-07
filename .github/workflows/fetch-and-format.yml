@@ -44,9 +44,6 @@ jobs:
           fetch_and_clean http://dangky.hexat.com/lau.txt        lau
           fetch_and_clean http://112.213.94.5/srvips/sv.txt      srv
           fetch_and_clean http://rkbom.site/ip/svmoi.txt         svmoi
-          fetch_and_clean http://kpah99.com/nqsh9.txt            nqsh9
-          fetch_and_clean http://sv.naska.com.vn/allsv.txt       naska
-          fetch_and_clean http://tuananh0781.hexat.com/19951999dshgkjd.txt tuananh
 
           # Gộp theo thứ tự
           for f in urls/*.txt; do
