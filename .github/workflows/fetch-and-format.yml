@@ -15,6 +15,14 @@ jobs:
         with:
           ref: main
 
+      - name: Save old fullsv.txt if exists
+        run: |
+          if [ -f fullsv.txt ]; then
+            cp fullsv.txt old_fullsv.txt
+          else
+            touch old_fullsv.txt
+          fi
+
       - name: Fetch and clean data by URL order
         run: |
           mkdir -p urls && > combined.txt
@@ -27,7 +35,7 @@ jobs:
             echo "Fetching $url..."
             curl -s "$url" > raw.txt
 
-            # Xoá BOM nếu có
+            # Xóa BOM nếu có
             sed '1s/^\xEF\xBB\xBF//' raw.txt > clean.txt
 
             # Đảm bảo dòng cuối có dấu ,
@@ -52,36 +60,28 @@ jobs:
           awk -F: '!a[$2":"$3]++' combined.txt > step_filtered.txt
 
           # Chỉ giữ dòng hợp lệ
-          grep -E '^[^:]+:[^:]+:[0-9]+:[0-9]+@$' step_filtered.txt > fullsv.txt
+          grep -E '^[^:]+:[^:]+:[0-9]+:[0-9]+@$' step_filtered.txt > new_fullsv.txt
 
-          # Xóa @ ở dòng cuối nếu có
-          sed -i '${s/@$//}' fullsv.txt
+          # Xóa @ dòng cuối nếu có
+          sed -i '${s/@$//}' new_fullsv.txt
 
           rm -rf urls combined.txt step_filtered.txt
 
-      - name: Compare and notify if changed
+      - name: Compare with old file and decide if changed
+        id: diffcheck
         run: |
-          cp fullsv.txt new_fullsv.txt
-          git fetch origin main
-          git checkout origin/main -- fullsv.txt || true
-
-          if ! cmp -s fullsv.txt new_fullsv.txt; then
+          if ! cmp -s new_fullsv.txt old_fullsv.txt; then
             echo "CHANGED=true" >> $GITHUB_ENV
-            diff=$(diff fullsv.txt new_fullsv.txt | grep '^>' | sed 's/^> //' | head -n 10 | sed ':a;N;$!ba;s/\n/\\n/g')
-            message="📥 fullsv.txt đã cập nhật lúc $(date '+%H:%M %d-%m-%Y') UTC\\n\\n🆕 Dòng mới:\\n${diff}"
-            echo "TG_MESSAGE=$message" >> $GITHUB_ENV
           else
             echo "CHANGED=false" >> $GITHUB_ENV
           fi
 
-      - name: Send Telegram message if changed
+      - name: Replace fullsv.txt if changed
         if: env.CHANGED == 'true'
-        run: |
-          curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_TOKEN }}/sendMessage \
-            -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
-            -d text="${{ env.TG_MESSAGE }}"
+        run: mv new_fullsv.txt fullsv.txt
 
       - name: Commit and push fullsv.txt
+        if: env.CHANGED == 'true'
         env:
           TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -89,7 +89,24 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
           git add fullsv.txt
-          git commit -m "Update fullsv.txt at $(date -u)" || echo "Nothing to commit"
-
+          git commit -m "Update fullsv.txt at $(date -u)"
           git remote set-url origin https://x-access-token:${TOKEN}@github.com/${{ github.repository }}
           git push origin HEAD:main
+
+      - name: Notify Telegram if changed
+        if: env.CHANGED == 'true'
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          TIME_NOW=$(date -u '+%H:%M %d-%m-%Y')
+          NEW_LINES=$(comm -13 old_fullsv.txt fullsv.txt | head -n 20)
+
+          if [ -n "$NEW_LINES" ]; then
+            MESSAGE=$(printf "📥 *fullsv.txt* đã cập nhật lúc *%s UTC*\n\n🆕 *Dòng mới:*\n\`\`\`\n%s\n\`\`\`" "$TIME_NOW" "$NEW_LINES")
+
+            curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
+              -d chat_id="${TELEGRAM_CHAT_ID}" \
+              -d text="$MESSAGE" \
+              -d parse_mode="Markdown"
+          fi
