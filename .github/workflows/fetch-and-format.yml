@@ -41,14 +41,7 @@ jobs:
           # Lọc trùng theo IP:PORT
           awk -F: '!a[$2":"$3]++' step3.txt > step4.txt
 
-# Chỉ giữ các dòng đúng định dạng: có 3 dấu ":" và không bị thiếu trường
-grep -E '^[^:]+:[^:]+:[0-9]+:[0-9]+@$' step4.txt > step5.txt
-
-# Xoá @ dòng cuối
-sed '${s/@$//}' step5.txt > fullsv.txt
-
-rm step5.txt
-
+          sed '${s/@$//}' step4.txt > fullsv.txt
 
           rm temp_raw.txt temp_utf8.txt step1.txt step2.txt step3.txt step4.txt
 
