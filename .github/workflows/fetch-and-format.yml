@@ -9,15 +9,15 @@ jobs:
   fetch_clean_save:
     runs-on: ubuntu-latest
 
+    env:
+      TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
         with:
           ref: main
-
-      - name: Backup old version
-        run: |
-          cp fullsv.txt fullsv_old.txt || touch fullsv_old.txt
 
       - name: Fetch and clean data by URL order
         run: |
@@ -29,7 +29,7 @@ jobs:
             local tmpfile="urls/$name.txt"
 
             echo "Fetching $url..."
-            curl -s "$url" > raw.txt
+            curl -s "$url" -o raw.txt || echo "" > raw.txt
 
             # Xóa BOM nếu có
             sed '1s/^\xEF\xBB\xBF//' raw.txt > clean.txt
@@ -43,54 +43,59 @@ jobs:
             rm -f raw.txt clean.txt
           }
 
+          # Danh sách URL theo thứ tự mong muốn
           fetch_and_clean http://rkbom.site/ip/svmoi.txt         svmoi
           fetch_and_clean http://kpah99.com/nqsh9.txt            nqsh9
 
+          # Gộp đúng thứ tự
           for f in urls/*.txt; do
             cat "$f" >> combined.txt
           done
 
+          # Lọc trùng theo IP:PORT
           awk -F: '!a[$2":"$3]++' combined.txt > step_filtered.txt
-          grep -E '^[^:]+:[^:]+:[0-9]+:[0-9]+@$' step_filtered.txt > fullsv.txt
-          sed -i '${s/@$//}' fullsv.txt
+
+          # Chỉ giữ dòng hợp lệ
+          grep -E '^[^:]+:[^:]+:[0-9]+:[0-9]+@$' step_filtered.txt > new_fullsv.txt
+
+          # Xóa @ cuối nếu có
+          sed -i '${s/@$//}' new_fullsv.txt
 
           rm -rf urls combined.txt step_filtered.txt
 
       - name: Compare and notify Telegram if changed
-        env:
-          TELEGRAM_TOKEN: "7664125092:AAGqzU6gCmEkrbqz4bbdHGkqSk4BuqO3gAU"
-          TELEGRAM_CHAT_ID: "770466376"
         run: |
-          if ! cmp -s fullsv.txt fullsv_old.txt; then
-            echo "fullsv.txt changed, generating diff..."
+          if ! cmp -s new_fullsv.txt fullsv.txt; then
+            diff=$(comm -13 <(sort fullsv.txt 2>/dev/null) <(sort new_fullsv.txt))
 
-            # Lấy dòng thêm mới
-            diff=$(comm -13 <(sort fullsv_old.txt) <(sort fullsv.txt) | head -n 20)
             count=$(echo "$diff" | grep -c . || true)
 
-            if [ "$count" -eq 0 ]; then
-              diff="(Không rõ dòng nào mới)"
-            fi
+            # Escape MarkdownV2 characters
+            escaped_diff=$(echo "$diff" | sed -e 's/[\\_*{}\[\]()~`>#+\-=|.!]/\\&/g')
 
-            # Thông báo Telegram
+            message="📥 *fullsv.txt* đã cập nhật lúc $(date -u '+%H:%M %d-%m-%Y UTC')\n\n🆕 $count dòng mới:\n\`\`\`\n$escaped_diff\n\`\`\`"
+
             curl -s -X POST https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage \
               -d chat_id="${TELEGRAM_CHAT_ID}" \
-              --data-urlencode text="📥 *fullsv.txt* đã cập nhật lúc $(date -u '+%H:%M %d-%m-%Y UTC')\n\n🆕 $count dòng mới:\n\`\`\`\n$diff\n\`\`\`" \
-              -d parse_mode=Markdown
-
+              --data-urlencode text="$message" \
+              -d parse_mode=MarkdownV2
           else
-            echo "No change in fullsv.txt"
+            echo "Không có thay đổi, không gửi Telegram."
           fi
 
-      - name: Commit and push fullsv.txt
+      - name: Commit and push if changed
         env:
           TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if ! cmp -s new_fullsv.txt fullsv.txt; then
+            mv new_fullsv.txt fullsv.txt
 
-          git add fullsv.txt
-          git commit -m "Update fullsv.txt at $(date -u)" || echo "Nothing to commit"
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          git remote set-url origin https://x-access-token:${TOKEN}@github.com/${{ github.repository }}
-          git push origin HEAD:main
+            git add fullsv.txt
+            git commit -m "Update fullsv.txt at $(date -u)"
+            git remote set-url origin https://x-access-token:${TOKEN}@github.com/${{ github.repository }}
+            git push origin HEAD:main
+          else
+            echo "No changes to commit."
