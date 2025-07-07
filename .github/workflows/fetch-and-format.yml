@@ -41,7 +41,6 @@ jobs:
           }
 
           # Danh sách URL theo thứ tự mong muốn
-          fetch_and_clean http://dangky.hexat.com/lau.txt        lau
           fetch_and_clean http://112.213.94.5/srvips/sv.txt      srv
           fetch_and_clean http://rkbom.site/ip/svmoi.txt         svmoi
 
