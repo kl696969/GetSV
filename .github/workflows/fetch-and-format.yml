@@ -31,8 +31,11 @@ jobs:
           # Chuyển mã hóa từ Windows-1258 → UTF-8 nếu cần
           iconv -f WINDOWS-1258 -t UTF-8 temp_raw.txt -o temp_utf8.txt || cp temp_raw.txt temp_utf8.txt
 
+          # Xoá BOM nếu có
+          sed -i '1s/^\xEF\xBB\xBF//' temp_utf8.txt
+
           # Tách dòng theo dấu , và chuẩn hóa
-          cat temp_utf8.txt | tr ',\r' '\n' > step1.txt
+          tr ',\r' '\n' < temp_utf8.txt > step1.txt
           grep -v '^$' step1.txt > step2.txt
 
           # Thêm @ nếu chưa có
@@ -41,9 +44,14 @@ jobs:
           # Lọc trùng theo IP:PORT
           awk -F: '!a[$2":"$3]++' step3.txt > step4.txt
 
-          sed '${s/@$//}' step4.txt > fullsv.txt
+          # Chỉ giữ dòng đúng định dạng: Tên:IP:PORT:FLAGS@
+          grep -E '^[^:]+:[^:]+:[0-9]+:[0-9]+@$' step4.txt > step5.txt
 
-          rm temp_raw.txt temp_utf8.txt step1.txt step2.txt step3.txt step4.txt
+          # Xoá @ ở dòng cuối nếu có
+          sed '${s/@$//}' step5.txt > fullsv.txt
+
+          # Xoá file tạm
+          rm temp_raw.txt temp_utf8.txt step1.txt step2.txt step3.txt step4.txt step5.txt
 
       - name: Commit and push fullsv.txt
         env:
