@@ -1,32 +1,9 @@
-THE9P.COM(web thẻ):27.0.12.112:19130:0@
-Hùng Vương:14.225.207.172:19129:0@
+THE9P.COM(web thè‰):27.0.12.112:19130:0@
+HĂ¹ng VÆ°Æ¡ng:14.225.207.172:19129:0@
 Kpah Baby:14.225.211.229:19129:0@
 Kpah Baby S2 ( new ):103.90.227.117:19129:0@
 kpahvn:103.2.230.109:19129:0@
-tống kim:14.225.198.46:19130:0@
-Phong vuong:14.225.230.41:19129:0@
-hoiuc:14.225.209.121:19129:0@
-SPECIAL:gate.kpahz.pro:19131:0@
-no1:14.225.218.4:19129:0@
-kpaht:103.211.207.21:19129:0@
-kpahx:ip.kpahx.com:19129:0@
-kpah99:160.250.247.248:19129:0@
---Tuyết Liên(tungbaby)--:sv.nqsh.site:19130:0@
-hskpah :maychuhs.hskpah.com:19129:0@
-kpahvip lua ga:221.132.33.149:19129:0@
-Kiếm Khách 1:112.213.94.5:12345:0@
-KPAH PLUS:222.255.214.2:19129:0@
-sv kpah2 test:14.225.255.114:19129:0@
-Kiếm Khách 5(new):112.213.94.5:12347:0@
-sơn lâm (kpah2):s.kpah2.me:19135:0@
-Cẩm khê (kpah5):112.213.84.70:19130:0@
-Thành Cổ:103.153.64.188:19131:0@
-Trường Giang (open) :sv.kpah2d.me:19129:0@
-NQSH.ME:ip.nqsh.me:19129:0@
-NQSH ( TUNGBABY):sv.nqsh.site:19129:0@
-GENZ 2:gate.kpahz.pro:19130:0@
-Đại La (kpah4):sv1.kpah4.com:19129:0@
-Sơn Lâm KPAH5 :112.213.84.70:19129:0@
-Thăng Long kpah3:103.153.64.188:19130:0@
-Tien Du kpah2:sv.kpah2.me:19129:0@
-Phong Chau kpah2:sv.kpah2.me:19131:0
+ï»¿Kiáº¿m KhĂ¡ch 5(new):112.213.94.5:12345:5@
+SÆ¡n LĂ¢m (má»›i):s.kpah2.me:19135:0@
+TiĂªn Du:sv.kpah2.me:19129:0@
+Phong ChĂ¢u:sv.kpah2.me:19131:0
