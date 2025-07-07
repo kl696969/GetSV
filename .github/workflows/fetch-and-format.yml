@@ -9,10 +9,6 @@ jobs:
   fetch_clean_save:
     runs-on: ubuntu-latest
 
-    env:
-      TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
-      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
@@ -31,7 +27,7 @@ jobs:
             echo "Fetching $url..."
             curl -s "$url" > raw.txt
 
-            # Xóa BOM nếu có
+            # Xoá BOM nếu có
             sed '1s/^\xEF\xBB\xBF//' raw.txt > clean.txt
 
             # Đảm bảo dòng cuối có dấu ,
@@ -56,36 +52,39 @@ jobs:
           awk -F: '!a[$2":"$3]++' combined.txt > step_filtered.txt
 
           # Chỉ giữ dòng hợp lệ
-          grep -E '^[^:]+:[^:]+:[0-9]+:[0-9]+@$' step_filtered.txt > new_fullsv.txt
+          grep -E '^[^:]+:[^:]+:[0-9]+:[0-9]+@$' step_filtered.txt > fullsv.txt
 
-          # Xóa @ cuối nếu có
-          sed -i '${s/@$//}' new_fullsv.txt
+          # Xóa @ ở dòng cuối nếu có
+          sed -i '${s/@$//}' fullsv.txt
 
           rm -rf urls combined.txt step_filtered.txt
 
-      - name: Compare and notify Telegram if changed
+      - name: Compare and notify if changed
         run: |
-          if [ -f fullsv.txt ]; then
-            if ! cmp -s new_fullsv.txt fullsv.txt; then
-              diff=$(comm -13 <(sort fullsv.txt 2>/dev/null) <(sort new_fullsv.txt))
-              count=$(echo "$diff" | grep -c . || true)
-              escaped_diff=$(echo "$diff" | sed -e 's/[\\_*{}\[\]()~`>#+\-=|.!]/\\&/g')
+          cp fullsv.txt new_fullsv.txt
+          git fetch origin main
+          git checkout origin/main -- fullsv.txt || true
 
-              message="📥 *fullsv.txt* đã cập nhật lúc $(date -u '+%H:%M %d-%m-%Y UTC')\n\n🆕 $count dòng mới:\n\`\`\`\n$escaped_diff\n\`\`\`"
-
-              curl -s -X POST https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage \
-                -d chat_id="${TELEGRAM_CHAT_ID}" \
-                --data-urlencode text="$message" \
-                -d parse_mode=MarkdownV2
-            fi
+          if ! cmp -s fullsv.txt new_fullsv.txt; then
+            echo "CHANGED=true" >> $GITHUB_ENV
+            diff=$(diff fullsv.txt new_fullsv.txt | grep '^>' | sed 's/^> //' | head -n 10 | sed ':a;N;$!ba;s/\n/\\n/g')
+            message="📥 fullsv.txt đã cập nhật lúc $(date '+%H:%M %d-%m-%Y') UTC\\n\\n🆕 Dòng mới:\\n${diff}"
+            echo "TG_MESSAGE=$message" >> $GITHUB_ENV
+          else
+            echo "CHANGED=false" >> $GITHUB_ENV
           fi
+
+      - name: Send Telegram message if changed
+        if: env.CHANGED == 'true'
+        run: |
+          curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_TOKEN }}/sendMessage \
+            -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
+            -d text="${{ env.TG_MESSAGE }}"
 
       - name: Commit and push fullsv.txt
         env:
           TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          mv new_fullsv.txt fullsv.txt
-
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
