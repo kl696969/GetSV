@@ -103,7 +103,7 @@ jobs:
           NEW_LINES=$(comm -13 old_fullsv.txt fullsv.txt | head -n 20)
 
           if [ -n "$NEW_LINES" ]; then
-            MESSAGE=$(printf "📥 *fullsv.txt* đã cập nhật lúc *%s UTC*\n\n🆕 *Dòng mới:*\n\`\`\`\n%s\n\`\`\`" "$TIME_NOW" "$NEW_LINES")
+            MESSAGE=$(printf "📥 đã cập nhật SV lúc *%s UTC*\n\n🆕 *SV mới:*\n\`\`\`\n%s\n\`\`\`" "$TIME_NOW" "$NEW_LINES")
 
             curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
               -d chat_id="${TELEGRAM_CHAT_ID}" \
