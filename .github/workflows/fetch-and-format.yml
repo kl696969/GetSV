@@ -99,7 +99,7 @@ jobs:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
-          TIME_NOW=$(date -u '+%H:%M %d-%m-%Y')
+          TIME_NOW=$(TZ="UTC-7" date '+%H:%M %d-%m-%Y')
           NEW_LINES=$(comm -13 old_fullsv.txt fullsv.txt | head -n 20)
 
           if [ -n "$NEW_LINES" ]; then
